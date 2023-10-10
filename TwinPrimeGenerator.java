@@ -13,7 +13,6 @@ public class TwinPrimeGenerator {
      * @param args Command line arguments (ignored)
      */
     public static void main(String[] args) {
-        // Test the method with the given range
         int twinPrime = generateTwinPrime(95500, 96000);
         System.out.println("The generated twin prime is: " + twinPrime);
     }
