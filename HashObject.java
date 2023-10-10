@@ -91,6 +91,6 @@ public class HashObject {
      */
     @Override
     public String toString() {
-        return key.toString();
+        return key.toString() + " " + frequencyCount + " " + probeCount;
     }
 }
