@@ -8,3 +8,4 @@ out/
 *.jar
 word-list.txt
 simple-inheritance-example/
+.vscode/
