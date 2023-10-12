@@ -42,7 +42,7 @@ The driver class is `HashtableTest`. See it's usage by running it without
 arguments:
 
 ```
-$ java java HashtableTest 
+$ java HashtableTest 
 Usage: java HashtableTest <dataType> <loadFactor> [<debugLevel>]
        <dataSource>: 1 ==> random numbers
                      2 ==> date value as a long
