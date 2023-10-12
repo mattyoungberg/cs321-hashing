@@ -1,7 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Date;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -10,12 +9,28 @@ import java.util.Scanner;
  * 
  * See the printUsage() method for command line arguments.
  * 
+ * A high level overview of the test driver is as follows:
+ *
+ * When ran, the test driver will parse the command line arguments and store them in a TestArgs
+ * object. This object is a common way for the class as a whole to interact semantically with the
+ * command line arguments. Then, the test driver will find a size for the hash table by calling the
+ * TwinPrimeGenerator.generateTwinPrime() method. This method will find a twin prime number between
+ * 95500 and 96000. This number will be used as the size of the hash table. Then, the hash tables
+ * will be constructed and the test scenarios ran.
+ * 
+ * There is another class, TestDataGenerator, which is an interface for generating test data. This
+ * interface is used to abstract the source of test data from the test driver. There are three
+ * implementations of this interface: RandomIntGenerator, DateSequenceGenerator, and
+ * WordFileGenerator. The RandomIntGenerator generates random integers. The DateSequenceGenerator
+ * generates a sequence of dates, starting from the current date and time. The WordFileGenerator
+ * generates words from the `word-list.txt` file.
+ * 
  * @author Matt Youngberg
  */
 public class HashtableTest {
 
     /**
-     * Inner class to parse and store command line arguments
+     * Inner class to store command line arguments semantically.
      */
     private static class TestArgs {
         /**
@@ -52,9 +67,9 @@ public class HashtableTest {
         /**
          * Get the next test data object
          * 
-         * @return The next test data object, or Optional.empty() if there are no more objects
+         * @return The next test data object
          */
-        public Optional<T> getNext();
+        public T getNext();
 
         /**
          * Get the name of the input source for the sake of summary information.
@@ -69,7 +84,7 @@ public class HashtableTest {
         public void reset();
 
         /**
-         * Close the generator
+         * Close the generator.
          */
         public void close();
     }
@@ -88,8 +103,8 @@ public class HashtableTest {
          * {@inheritDoc}
          */
         @Override
-        public Optional<Integer> getNext() {
-            return Optional.of(random.nextInt());
+        public Integer getNext() {
+            return random.nextInt();
         }
 
         /**
@@ -115,15 +130,18 @@ public class HashtableTest {
      * Generates a sequence of dates, starting from the current date and time.
      */
     private static class DateSequenceGenerator implements TestDataGenerator<Date> {
+        /**
+         * The current date and time for the generator.
+         */
         private long current = new Date().getTime();
 
         /**
          * {@inheritDoc}
          */
         @Override
-        public Optional<Date> getNext() {
-            current += 1000; //increase by 1 second (1000 ms)
-            return Optional.of(new Date(current));
+        public Date getNext() {
+            current += 1000; // increase by 1 second (1000 ms)
+            return new Date(current);
         }
 
         /**
@@ -146,7 +164,7 @@ public class HashtableTest {
     }
 
     /**
-     * Generates words from a file.
+     * Generates words from the `word-list.txt` file.
      */
     private static class WordFileGenerator implements TestDataGenerator<String> {
         /**
@@ -157,10 +175,9 @@ public class HashtableTest {
         /**
          * Construct a WordFileGenerator.
          * 
-         * @param fileName  The name of the file to read words from. The file should contain one
-         *                  word per line.
+         * This constructor opens the `word-list.txt` file.
          */
-        public WordFileGenerator(String fileName) {
+        public WordFileGenerator() {
             reset();
         }
 
@@ -174,11 +191,16 @@ public class HashtableTest {
          * {@inheritDoc}
          */
         @Override
-        public Optional<String> getNext() {
-            if (scnr != null && scnr.hasNext()) {
-                return Optional.of(scnr.next());
+        public String getNext() {
+            if (scnr == null) {
+                throw new RuntimeException("Scanner is closed.");
             }
-            return Optional.empty();
+
+            if (scnr.hasNext()) {
+                return scnr.next();
+            } else {
+                throw new RuntimeException("Generator exhausted.");
+            }
         }
 
         /**
@@ -209,46 +231,27 @@ public class HashtableTest {
             }
         }
     }
-
-    // TODO remove
-    private static class RepeatingIntGenerator implements TestDataGenerator<Integer> {
-
-        @Override
-        public Optional<Integer> getNext() { return Optional.of(1); }
-
-        @Override
-        public String getInputName() { return "Repeating-Integers"; }
-
-        @Override
-        public void reset() {}
-
-        @Override
-        public void close() {}
-        
-    }
     
     /**
-     * Main method; parse command line arguments and run the test.
+     * Main method; parse command line arguments and run the tests.
      * 
      * @param args Command line arguments. See printUsage() for details.
      */
     public static void main(String[] args) {
         // Parse arguments from the command line
         TestArgs testArgs = new TestArgs();
-        parseArgs(args, testArgs);
+        parseArgs(args, testArgs);  // Saves the parsed arguments in testArgs
 
         // Find table size; print
         int tableSize = TwinPrimeGenerator.generateTwinPrime(95500, 96000);
-        // int tableSize = TwinPrimeGenerator.generateTwinPrime(10, 100);  // TODO remove
         System.out.println("HashtableTest: Found a twin prime table capacity: " + tableSize);
 
-
+        // Construct hash tables
         Hashtable linearProbingHashTable = new LinearProbing(tableSize);
         Hashtable doubleHashingHashTable = new DoubleHashing(tableSize);
 
         // Build TestDataGenerator
         TestDataGenerator<?> testDataGenerator = buildTestDataGenerator(testArgs);
-        // TestDataGenerator<?> testDataGenerator = new RepeatingIntGenerator();  // TODO remove
 
         // Print summary information
         System.out.println("HashtableTest: Input: " + testDataGenerator.getInputName() + "\tLoadfactor: " + String.format("%.2f", testArgs.loadFactor));
@@ -259,9 +262,8 @@ public class HashtableTest {
         // Run tests
         runTest("Linear Probing", linearProbingHashTable, numObjects, testDataGenerator, testArgs, "linear-dump.txt");  // Linear Probing
         testDataGenerator.reset();  // Reset the generator
+        System.out.println();
         runTest("Double Hashing", doubleHashingHashTable, numObjects, testDataGenerator, testArgs, "double-dump.txt");  // Double Hashing
-
-        // Close the generator
         testDataGenerator.close();
     }
 
@@ -318,6 +320,12 @@ public class HashtableTest {
         System.exit(1);
     }
 
+    /**
+     * Factory method for building a TestDataGenerator using the TestArgs object.
+     * 
+     * @param testArgs  The TestArgs object
+     * @return          The TestDataGenerator of wildcard type
+     */
     private static TestDataGenerator<?> buildTestDataGenerator(TestArgs testArgs) {
         switch (testArgs.dataSource) {
             case 1:
@@ -325,12 +333,22 @@ public class HashtableTest {
             case 2:
                 return new DateSequenceGenerator();
             case 3:
-                return new WordFileGenerator("word-list.txt");  // hard coded to this file
+                return new WordFileGenerator();
             default:
                 throw new RuntimeException("Invalid data source: " + testArgs.dataSource);
         }
     }
 
+    /**
+     * Run a test on a hash table.
+     * 
+     * @param using             The semantic name of the type of hash table being used
+     * @param table             The hash table to test
+     * @param numObjects        The number of objects to insert into the hash table
+     * @param testDataGenerator The TestDataGenerator to use for generating test data
+     * @param testArgs          The TestArgs object
+     * @param fileName          The name of the file to save the hash table dump to
+     */
     private static void runTest(String using, Hashtable table, int numObjects, TestDataGenerator<?> testDataGenerator, TestArgs testArgs, String fileName) {
         System.out.println("\tUsing " + using);
         System.out.println("HashtableTest: size of hash table is " + numObjects);
@@ -350,25 +368,28 @@ public class HashtableTest {
         }
     }
 
+    /**
+     * Load a hash table with test data.
+     * 
+     * @param table             The hash table to load
+     * @param numObjects        The number of objects to insert into the hash table
+     * @param testDataGenerator The TestDataGenerator to use for generating test data
+     * @param testArgs          The TestArgs object
+     */
     private static void loadHashtable(Hashtable table, int numObjects, TestDataGenerator<?> testDataGenerator, TestArgs testArgs) {
         int insertedObjects = 0;
         while (insertedObjects < numObjects) {
-            Optional<?> next = testDataGenerator.getNext();
-            if (next.isPresent()) {
-                Object key = next.get();
-                int idx = table.insert(key);
-                if (idx != -1) {
-                    insertedObjects++;
+            Object key = testDataGenerator.getNext();
+            int idx = table.insert(key);
+            if (idx != -1) {
+                insertedObjects++;
+            }
+            if (testArgs.debugLevel == 2) {
+                if (idx == -1) {
+                    System.out.println("Duplicate: " + key);
+                } else {
+                    System.out.println("Inserted: " + key);
                 }
-                if (testArgs.debugLevel == 2) {
-                    if (idx == -1) {
-                        System.out.println("Duplicate: " + key);
-                    } else {
-                        System.out.println("Inserted: " + key);
-                    }
-                }
-            } else {  // Implies that the generator is exhausted; shouldn't happen
-                break;
             }
         }
     }
