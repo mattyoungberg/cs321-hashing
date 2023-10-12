@@ -58,8 +58,8 @@ public class HashObject {
     /**
      * TODO
      */
-    public void incrementProbeCount() {
-        this.probeCount++;
+    public void setProbeCount(int probeCount) {
+        this.probeCount = probeCount;
     }
     
     /**

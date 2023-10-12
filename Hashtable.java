@@ -1,3 +1,6 @@
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+
 /**
  * An abstract Hashtable class.
  * 
@@ -43,27 +46,40 @@ public abstract class Hashtable {
     /**
      * Insert the given key into the hash table.
      * 
+     * Returns -1 if the given key would duplicate one already in the table.
+     * 
+     * Throws a RuntimeException if the table is full.
+     * 
      * @param key   The key to be inserted
      * @return      The index of the inserted key
      */
     public int insert(Object key) {
         int i = 0;
-        do {  // Following the pseudocode in the book, hence do-while
+        int retIdx = -1;
+        while (i < table.length) {
             int q = hash(key, i);
-            if (table[q] == null) {
-                table[q] = new HashObject(key);
-                return q;
-            }
-            else {
-                table[q].incrementProbeCount();
-                if (table[q].equals(new HashObject(key))) {
+            if (table[q] == null) {  // Insertion point found; will break
+                HashObject hashObj = new HashObject(key);
+                hashObj.setProbeCount(i + 1);
+                table[q] = hashObj;
+                retIdx = q;
+                break;  // Insertion complete
+            } else {  // Already occupied; might be duplicate, in which case, exit
+                if (table[q].getKey().equals(key)) {  // Duplicate found
                     table[q].incrementFrequency();
-                    return q;
+                    break;
+                } else {
+                    i++;
+                    // Keep probing
                 }
-                i++;
-            };
-        } while (i < table.length);
-        throw new RuntimeException("Table is full");
+            }
+        }
+
+        if (i == table.length) {
+            throw new RuntimeException("Table is full");
+        }
+
+        return retIdx;
     }
 
     /**
@@ -77,7 +93,7 @@ public abstract class Hashtable {
         int q = -1;
         do {  // Following the pseudocode in the book, hence do-while
             q = hash(key, i);
-            if (table[q] == key) {
+            if (table[q] == new HashObject(key)) {
                 return q;
             }
             else i++;
@@ -111,5 +127,69 @@ public abstract class Hashtable {
      */
     protected int h1(Object key) {
         return positiveMod(key.hashCode(), tableSize);
-    }       
+    }
+    
+    /**
+     * Dump the hash table to a file.
+     * 
+     * @param fileName                  The name of the file to dump to
+     * @throws FileNotFoundException    If there is an issue writing to the file
+     */
+    public void dumpToFile(String fileName) throws FileNotFoundException {
+        try (PrintWriter out = new PrintWriter(fileName)) {
+            for (int i = 0; i < table.length; i++) {
+                if (table[i] != null) {
+                    HashObject hashObj = table[i];
+                    out.println("table[" + i + "]: " + hashObj.getKey() + " " + hashObj.getFrequencyCount() + " " + hashObj.getProbeCount());
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the amount of attempted duplicate insertions into the table.
+     * 
+     * @return  The amount of attempted duplicate insertions into the table
+     */
+    public int getDuplicateCount() {
+        int duplicateCount = 0;
+        for (int i = 0; i < table.length; i++) {
+            if (table[i] != null) {
+                duplicateCount += table[i].getFrequencyCount() - 1;
+            }
+        }
+        return duplicateCount;
+    }
+
+    /**
+     * Get the amount of attempted insertions into the table.
+     * 
+     * @return The amount of attempted insertions into the table
+     */
+    public int getInsertionCount() {
+        int insertionCount = 0;
+        for (int i = 0; i < table.length; i++) {
+            if (table[i] != null) {
+                insertionCount += table[i].getFrequencyCount();
+            }
+        }
+        return insertionCount;
+    }
+
+    /**
+     * Get the average amount each object in the table was probed.
+     * 
+     * @return  The average amount each object in the table was probed
+     */
+    public double getAverageProbes() {
+        int probeCount = 0;
+        int occupiedSlots = 0;
+        for (int i = 0; i < table.length; i++) {
+            if (table[i] != null) {
+                probeCount += table[i].getProbeCount();
+                occupiedSlots++;
+            }
+        }
+        return (double) probeCount / occupiedSlots;
+    }
 }
