@@ -143,8 +143,7 @@ public abstract class Hashtable {
             for (int i = 0; i < table.length; i++) {
                 if (table[i] != null) {
                     HashObject hashObj = table[i];
-                    out.println("table[" + i + "]: " + hashObj.getKey() + " " 
-                        + hashObj.getFrequencyCount() + " " + hashObj.getProbeCount());
+                    out.println("table[" + i + "]: " + hashObj);
                 }
             }
         }
