@@ -4,9 +4,9 @@ function header(){
 	output=$1
 	for i in {1..80} 
 	do
-		echo -n "-" >> $output
+		echo -n "-" | tee -a $output
 	done
-	echo >> $output
+	echo | tee -a $output
 }
 
 echo
@@ -36,12 +36,12 @@ testResults="test-results.txt"
 # Loop through different load factors
 for load in 0.5 0.6 0.7 0.8 0.9 0.95 0.99
 do
-	header "$testResults"  # Can only be used in a file context, not stdout
+	echo | tee -a "$testResults"
+	header "$testResults"
 
 	echo "Running java HashtableTest dataSource = 3 loadFactor = $load "
 	java HashtableTest 3 $load $debugLevel  >> /dev/null
 	dos2unix linear-dump.txt double-dump.txt  >& /dev/null
-    echo | tee -a "$testResults"
 	diff -w -B  linear-dump.txt test-cases/word-list-$load-linear-dump.txt > diff-linear-$load.out
 	if test "$?" = 0
 	then
@@ -61,6 +61,9 @@ do
 		echo "==> Test FAILED for double probing load = $load!! " | tee -a "$testResults"
 		echo "       Check the file diff-double-$load.out for differences" | tee -a "$testResults"
 	fi
-	echo | tee -a "$testResults"
+	header "$testResults"
 
 done
+
+echo | tee -a "$testResults"
+/bin/rm linear-dump.txt double-dump.txt  # Only contains context for the last test; better off without
