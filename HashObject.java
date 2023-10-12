@@ -100,11 +100,6 @@ public class HashObject {
     /**
      * Returns true if the given object is a HashObject with the same key as this one.
      * 
-     * Note: The project spec asks us to create this method, but I found its only use in the
-     * Hashtable.insert() method. Within, I could have just compared the keys directly in that
-     * method (as opposed to creating a passing reference to a new HashObject just for the sake of
-     * comparison), but the spec wanted me to use this method somewhere, so I used it there.
-     * 
      * @param obj The object to compare to this one
      * @return    Wehter the given object is a HashObject with the same key as this one
      */
