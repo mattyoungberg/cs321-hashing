@@ -31,14 +31,14 @@ echo
 
 dos2unix test-cases/* >& /dev/null
 debugLevel=1
-load = 0.5
+load=0.5
 
 echo "Running java HashtableTest dataSource = 3 loadFactor = $load "
 java HashtableTest 3 $load $debugLevel  >> /dev/null
 dos2unix linear-dump.txt double-dump.txt  >& /dev/null
 
 echo
-diff linear-dump.txt test-cases/word-list-$load-linear-dump.txt > diff-linear-$load.out
+diff -w -B  linear-dump.txt test-cases/word-list-$load-linear-dump.txt > diff-linear-$load.out
 if test "$?" = 0
 then
 	echo "Test PASSED for linear probing and load = $load"
