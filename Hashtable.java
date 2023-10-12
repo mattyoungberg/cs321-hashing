@@ -5,7 +5,9 @@ import java.io.PrintWriter;
  * An abstract Hashtable class.
  * 
  * Implementations must define the hash method, which will define how the table's probe sequence is
- * generated.
+ * generated. Insertions and searching are methods that are common to all hash tables, so they are
+ * defined here. Additionally, implementations get access to the table and size itself, as well
+ * as methods that can dump to a file and provide summary statistics.
  * 
  * @author Matt Youngberg
  */
@@ -65,7 +67,7 @@ public abstract class Hashtable {
                 retIdx = q;
                 break;  // Insertion complete
             } else {  // Already occupied; might be duplicate, in which case, exit
-                if (table[q].getKey().equals(key)) {  // Duplicate found
+                if (table[q].equals(new HashObject(key))) {  // Could compare the keys directly here, but the spec wants me to use this method somewhere.
                     table[q].incrementFrequency();
                     break;
                 } else {
@@ -90,14 +92,15 @@ public abstract class Hashtable {
      */
     public int search(Object key) {
         int i = 0;
-        int q = -1;
-        do {  // Following the pseudocode in the book, hence do-while
-            q = hash(key, i);
-            if (table[q] == new HashObject(key)) {
-                return q;
+        int currentIdx = hash(key, i);
+        
+        while (table[currentIdx] != null && i < table.length) {
+            if (table[currentIdx].getKey().equals(key)) {
+                return currentIdx;
             }
-            else i++;
-        } while (table[q] != null && i < table.length);
+            i++;
+            currentIdx = hash(key, i);
+        }
         return -1;
     }
 
@@ -140,25 +143,11 @@ public abstract class Hashtable {
             for (int i = 0; i < table.length; i++) {
                 if (table[i] != null) {
                     HashObject hashObj = table[i];
-                    out.println("table[" + i + "]: " + hashObj.getKey() + " " + hashObj.getFrequencyCount() + " " + hashObj.getProbeCount());
+                    out.println("table[" + i + "]: " + hashObj.getKey() + " " 
+                        + hashObj.getFrequencyCount() + " " + hashObj.getProbeCount());
                 }
             }
         }
-    }
-
-    /**
-     * Get the amount of attempted duplicate insertions into the table.
-     * 
-     * @return  The amount of attempted duplicate insertions into the table
-     */
-    public int getDuplicateCount() {
-        int duplicateCount = 0;
-        for (int i = 0; i < table.length; i++) {
-            if (table[i] != null) {
-                duplicateCount += table[i].getFrequencyCount() - 1;
-            }
-        }
-        return duplicateCount;
     }
 
     /**
@@ -174,6 +163,21 @@ public abstract class Hashtable {
             }
         }
         return insertionCount;
+    }
+
+    /**
+     * Get the amount of attempted duplicate insertions into the table.
+     * 
+     * @return The amount of attempted duplicate insertions into the table
+     */
+    public int getDuplicateCount() {
+        int duplicateCount = 0;
+        for (int i = 0; i < table.length; i++) {
+            if (table[i] != null) {
+                duplicateCount += table[i].getFrequencyCount() - 1;  // Derived, not defined
+            }
+        }
+        return duplicateCount;
     }
 
     /**
