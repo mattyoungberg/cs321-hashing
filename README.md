@@ -69,8 +69,8 @@ $ ./run-tests.sh
 
 ## Results 
 
-Here are tables that help one intuitively explore how Linearing Probing 
-generally outperforms by Double Hashing; the latter avoids clustering and thus
+Here are tables that help one intuitively explore how Linearing Probing is
+generally outperformed by Double Hashing; the latter avoids clustering and thus
 lowers the average amount of probes that have to happen per insert:
 
 ### Random Numbers
